@@ -1,0 +1,119 @@
+Option Explicit
+
+Sub StockAnalysis()
+    ' Declare variables
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim ticker As String
+    Dim openingPrice As Double
+    Dim closingPrice As Double
+    Dim yearlyChange As Double
+    Dim percentChange As Double
+    Dim totalVolume As Double
+    Dim rowNum As Long
+    Dim greatestIncrease As Double
+    Dim greatestDecrease As Double
+    Dim greatestVolume As Double
+    Dim greatestIncTicker As String
+    Dim greatestDecTicker As String
+    Dim greatestVolTicker As String
+    Dim wsSummary As Worksheet
+    Dim outputRow As Long
+    
+    ' Check if "Summary" sheet already exists, if not, create it
+    On Error Resume Next
+    Set wsSummary = ThisWorkbook.Sheets("Summary")
+    On Error GoTo 0
+    
+    If wsSummary Is Nothing Then
+        Set wsSummary = Sheets.Add(After:=Sheets(Sheets.Count))
+        wsSummary.Name = "Summary"
+    Else
+        ' Clear existing data in the "Summary" sheet
+        wsSummary.Cells.Clear
+    End If
+    
+    ' Initialize variables for the "Summary" sheet
+    outputRow = 1
+    
+    ' Output headers for the "Summary" sheet
+    wsSummary.Cells(outputRow, 1).Value = "Ticker"
+    wsSummary.Cells(outputRow, 2).Value = "Value"
+    outputRow = outputRow + 1 ' Move to the next row for values
+    
+    ' Loop through each sheet
+    For Each ws In ThisWorkbook.Sheets
+        ' Skip the "Summary" sheet
+        If ws.Name <> "Summary" Then
+            ' Find the last row in the sheet
+            lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+            
+            ' Loop through the data
+            For rowNum = 2 To lastRow
+                ' Retrieve data for the current row
+                ticker = ws.Cells(rowNum, 1).Value
+                openingPrice = ws.Cells(rowNum, 3).Value
+                closingPrice = ws.Cells(rowNum, 6).Value
+                totalVolume = ws.Cells(rowNum, 7).Value
+                
+                ' Check for missing or empty data
+                If IsEmpty(ticker) Or IsEmpty(openingPrice) Or IsEmpty(closingPrice) Or IsEmpty(totalVolume) Then
+                    ' If any of the essential data is missing, skip the row and move to the next one
+                    GoTo NextIteration
+                End If
+                
+                ' Calculate yearly change and percentage change
+                yearlyChange = closingPrice - openingPrice
+                If openingPrice <> 0 Then
+                    percentChange = (closingPrice - openingPrice) / openingPrice * 100
+                Else
+                    percentChange = 0
+                End If
+                
+                ' Check for greatest increase, decrease, and volume for each ticker
+                If percentChange > greatestIncrease Then
+                    greatestIncrease = percentChange
+                    greatestIncTicker = ticker
+                End If
+                
+                If percentChange < greatestDecrease Then
+                    greatestDecrease = percentChange
+                    greatestDecTicker = ticker
+                End If
+                
+                If totalVolume > greatestVolume Then
+                    greatestVolume = totalVolume
+                    greatestVolTicker = ticker
+                End If
+                
+NextIteration:
+            Next rowNum
+        End If
+    Next ws
+    
+    ' Output the results for each ticker in the "Summary" sheet
+    wsSummary.Cells(outputRow, 1).Value = "Greatest % Increase"
+    wsSummary.Cells(outputRow, 2).Value = greatestIncrease
+    outputRow = outputRow + 1
+    
+    wsSummary.Cells(outputRow, 1).Value = greatestIncTicker
+    wsSummary.Cells(outputRow, 2).Value = Format(greatestIncrease, "0.00%")
+    outputRow = outputRow + 2 ' Skip a row
+    
+    wsSummary.Cells(outputRow, 1).Value = "Greatest % Decrease"
+    wsSummary.Cells(outputRow, 2).Value = greatestDecrease
+    outputRow = outputRow + 1
+    
+    wsSummary.Cells(outputRow, 1).Value = greatestDecTicker
+    wsSummary.Cells(outputRow, 2).Value = Format(greatestDecrease, "0.00%")
+    outputRow = outputRow + 2 ' Skip a row
+    
+    wsSummary.Cells(outputRow, 1).Value = "Greatest Total Volume"
+    wsSummary.Cells(outputRow, 2).Value = greatestVolume
+    outputRow = outputRow + 1
+    
+    wsSummary.Cells(outputRow, 1).Value = greatestVolTicker
+    wsSummary.Cells(outputRow, 2).Value = greatestVolume
+    
+End Sub
+
